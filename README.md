@@ -14,11 +14,10 @@ difficult-to-handle edge cases and the desired semantics are unclear. Surge
 upgrades, auto-provisioning, auto-scaling might stop working as expected.
 However, some users may still wish to use placement policies with GKE.
 
-Because placement policies can be applied after instances exist (and forced into
-effect with a simulated maintenance event), this controller allows these
-policies to be applied without disrupting core functionality. The edge cases
-(typically hit when the placement policy instance size limit has been hit) will
-be handled with standard Kubernetes scheduling semantics.
+Because placement policies can be applied after instances exist, this controller
+allows these policies to be applied without disrupting core functionality. The
+edge cases (typically hit when the placement policy instance size limit has been
+hit) will be handled with standard Kubernetes scheduling semantics.
 
 ## Usage
 
@@ -47,12 +46,6 @@ The use of placement policies is subject to several constraints:
 *   Nodes with placement policy must not be preemptible.
 *   Nodes with placement policy must be MIGRATE on maintenance events.
 *   Only spread placement policies are supported.
-
-When the placement policy is set initially, the node is only in an *eventual*
-compliant state. Therefore, a maintenance event must be simulated. These
-simulated events should trigger a live migration of the instance which will
-ensure that it is compliant with its associated placement policy. This is done
-before the label can be applied successfully.
 
 ## Specification of a placement policy
 

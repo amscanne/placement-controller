@@ -126,14 +126,6 @@ func (cs *wrapComputeService) AddResourcePolicies(project string, zone string, i
 	return err
 }
 
-// SimulateMaintenanceEvent implements controller.ComputeService.SimulateMaintenanceEvent.
-func (cs *wrapComputeService) SimulateMaintenanceEvent(project string, zone string, instance string) error {
-	s := (*compute.Service)(cs)
-	op := s.Instances.SimulateMaintenanceEvent(project, zone, instance)
-	_, err := op.Do()
-	return err
-}
-
 // wallTime is an implementation of controller.Timer.
 type wallTime struct{}
 
@@ -181,7 +173,6 @@ func Run(opts *options.Options) error {
 					Requested:   metrics.RequestedPolicies,
 					Applied:     metrics.AppliedPolicies,
 					AddPolicy:   metrics.AddPolicyDuration,
-					ApplyPolicy: metrics.ApplyPolicyDuration,
 				},
 				ClusterProject: opts.ClusterProject,
 			})

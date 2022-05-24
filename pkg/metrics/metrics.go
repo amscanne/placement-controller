@@ -65,23 +65,10 @@ var (
 			"zone", // For example, "us-central1-c", "europe-west4-a".
 		},
 	))
-	// ApplyPolicyDuration represents the duration of the add policy call and simluated maintenance event.
-	ApplyPolicyDuration = (*Distribution)(prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Subsystem: subsystem,
-			Name:      "apply_policy_duration",
-			Help:      "The add policy API request duration and simulated maintenance event in seconds.",
-			Buckets:   prometheus.ExponentialBuckets(120, 1.2, 10),
-		},
-		[]string{
-			"zone", // For example, "us-central1-c", "europe-west4-a".
-		},
-	))
 )
 
 func init() {
 	prometheus.MustRegister((*prometheus.GaugeVec)(RequestedPolicies))
 	prometheus.MustRegister((*prometheus.GaugeVec)(AppliedPolicies))
 	prometheus.MustRegister((*prometheus.HistogramVec)(AddPolicyDuration))
-	prometheus.MustRegister((*prometheus.HistogramVec)(ApplyPolicyDuration))
 }

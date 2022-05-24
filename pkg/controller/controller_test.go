@@ -25,7 +25,6 @@ type fakeInstance struct {
 	name           string
 	policy         string
 	policyErr      error
-	maintenanceErr error
 }
 
 // fakeComputeService represents an aggregate compute service.
@@ -96,18 +95,6 @@ func (f *fakeComputeService) AddResourcePolicies(project string, zone string, na
 		}
 	}
 	return fmt.Errorf("no instances matching %s for project %q in zone %s", name, project, zone)
-}
-
-// AddResourcePolicies implements ComputeService.SimulateMaintenanceEvent.
-func (f *fakeComputeService) SimulateMaintenanceEvent(project string, zone string, name string) error {
-	for _, instance := range f.instances {
-		if instance.project == project && instance.zone == zone && instance.name == name {
-			instance.mu.Lock()
-			defer instance.mu.Unlock()
-			return instance.maintenanceErr
-		}
-	}
-	return fmt.Errorf("no instances for project %q", project)
 }
 
 // fakeTimer is an implement of timers for testing.
@@ -221,7 +208,6 @@ func newTestController() (c *Controller, syncfn func(), stop func()) {
 			Requested:   &fakeGauge{values: make(map[string]int)},
 			Applied:     &fakeGauge{values: make(map[string]int)},
 			AddPolicy:   &fakeDistribution{values: make(map[string]time.Duration)},
-			ApplyPolicy: &fakeDistribution{values: make(map[string]time.Duration)},
 		},
 		ClusterProject: testProject,
 	})
@@ -413,15 +399,10 @@ func TestFailure(t *testing.T) {
 	for _, tc := range []struct {
 		name           string
 		policyErr      error
-		maintenanceErr error
 	}{
 		{
 			name:      "policy",
 			policyErr: errors.New("unlucky!"),
-		},
-		{
-			name:           "maintenance",
-			maintenanceErr: errors.New("unlucky!"),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -433,7 +414,6 @@ func TestFailure(t *testing.T) {
 				zone:           testZone1,
 				name:           testInstance1,
 				policyErr:      tc.policyErr,
-				maintenanceErr: tc.maintenanceErr,
 			}
 			n := addNode(t, c, f)
 			n.Labels[requestedLabel] = testPolicy1 // Request this policy for this instance.
@@ -478,7 +458,6 @@ func TestFailure(t *testing.T) {
 				f.mu.Lock()
 				defer f.mu.Unlock()
 				f.policyErr = nil
-				f.maintenanceErr = nil
 			})
 
 			// Sync and check that it has applied.

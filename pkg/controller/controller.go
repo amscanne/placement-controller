@@ -37,7 +37,6 @@ type ComputeService interface {
 	GetResourcePolicy(project string, zone string, instance string) (string, error)
 	RemoveResourcePolicies(project string, zone string, instance string, request *compute.InstancesRemoveResourcePoliciesRequest) error
 	AddResourcePolicies(project string, zone string, instance string, request *compute.InstancesAddResourcePoliciesRequest) error
-	SimulateMaintenanceEvent(project string, zone string, instance string) error
 }
 
 // Timer is used for the passage of time.
@@ -61,7 +60,6 @@ type Metrics struct {
 	Requested   MetricGauge
 	Applied     MetricGauge
 	AddPolicy   MetricDistribution
-	ApplyPolicy MetricDistribution
 }
 
 // Options are Controller options.
@@ -290,16 +288,6 @@ func (c *Controller) setPlacementPolicy(n *corev1.Node, oldPolicy, newPolicy str
 	}
 	addTime := time.Since(startTime)
 	c.Metrics.AddPolicy.Observe(n.Labels[zoneLabel], addTime)
-
-	// If the policy is non-nil, trigger a maintenance event.
-	if fullNewPolicy != "" {
-		if err := c.ComputeService.SimulateMaintenanceEvent(c.ClusterProject, n.Labels[zoneLabel], n.Name); err != nil {
-			c.setPlacementPolicy(n, "", oldPolicy) // Reset the previous policy.
-			return fmt.Errorf("unable to simulate a maintenance event: %w", err)
-		}
-		applyTime := time.Since(startTime)
-		c.Metrics.ApplyPolicy.Observe(n.Labels[zoneLabel], applyTime)
-	}
 
 	return nil
 }
