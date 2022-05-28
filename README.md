@@ -78,6 +78,8 @@ proceed until a full week between attempts. For a large cluster, where up to
 15,000 nodes might be misconfigured, this would result in an attempt to set the
 placement policy on a node every 40 seconds.
 
+View container logs for replicas of placement-contoller deployment identify these failures.
+
 ## Installation
 
 **These instructions assume [Workload
@@ -114,25 +116,37 @@ Now, allow the service to use the service account using workload identity:
 ```bash
 kubectl create namespace "${K8S_NAMESPACE}"
 kubectl create serviceaccount "placement-controller" --namespace "${K8S_NAMESPACE}"
-gcloud iam service-accounts add-iam-policy-binding "${GSA_NAME}@${GSA_PROJECT}.iam.gserviceaccount.com" --role roles/iam.workloadIdentityUser --member "serviceAccount:${COMPUTE_PROJECT}.svc.id.goog[${K8S_NAMESPACE}/placement-controller]"
+gcloud iam service-accounts add-iam-policy-binding "${GSA_NAME}@${GSA_PROJECT}.iam.gserviceaccount.com" --role roles/iam.workloadIdentityUser --member "serviceAccount:${COMPUTE_PROJECT}.svc.id.goog[${K8S_NAMESPACE}/placement-controller]" --project "${COMPUTE_PROJECT}"
 kubectl annotate serviceaccount "placement-controller" --namespace "${K8S_NAMESPACE}" iam.gke.io/gcp-service-account="${GSA_NAME}@${GSA_PROJECT}.iam.gserviceaccount.com"
 ```
 
 ### Building and deploying
 
-This repository contains a sample `deployment.yaml` that can be built with
-[ko](https://github.com/google/ko). To start, `ko` must be installed:
+To start, `ko` must be installed:
 
 ```go
 go install github.com/google/ko@latest
 ```
+Select appropirate location for image:
+```bash
+export KO_DOCKER_REPO=gcr.io/my-project/placement-controller
+```
 
-After the permissions have been setup appropriately, the deployment can be
+Clone and build & publish image:
+```bash
+git clone https://github.com/amscanne/placement-controller.git
+cd placement-controller
+go build cmd/placement-controller/main.go
+ko publish .
+```
+
+This repository contains a sample `deployment.yaml` that can be built with
+[ko](https://github.com/google/ko). After the permissions have been setup 
+appropriately to the image, the deployment can be
 created or updated with providing an appropriate `KO_DOCKER_REPO` and running:
 
 
 ```bash
 kubectl config set-context --current --namespace="${K8S_NAMESPACE}"
-KO_DOCKER_REPO=gcr.io/my-project/placement-controller ko resolve -f deployment.yaml | kubectl apply -f -
-
+ko resolve -f deployment.yaml | kubectl apply -f -
 ```
