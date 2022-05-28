@@ -38,6 +38,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: placement-policy-binding
+  namespace: placement-controller
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -51,6 +52,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: placement-controller
+  namespace: placement-controller
   labels:
     app: placement-controller
 spec:
@@ -79,38 +81,3 @@ spec:
             limits:
               memory: "256Mi"
               cpu: "100m"
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: placement-controller
-  labels:
-    app: placement-controller
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: placement-controller
-  template:
-    metadata:
-      labels:
-        app: placement-controller
-    spec:
-      serviceAccountName: placement-controller
-      nodeSelector:
-        iam.gke.io/gke-metadata-server-enabled: "true"
-      containers:
-        - name: placement-controller
-          image: ko://github.com/amscanne/placement-controller/cmd/placement_controller
-          args:
-            - -leader-elect=true
-            - -lease-namespace=placement-controller
-          resources:
-            requests:
-              memory: "64Mi"
-              cpu: "10m"
-            limits:
-              memory: "256Mi"
-              cpu: "100m"
-
